@@ -1,0 +1,12 @@
+{{header
+| title    = 揚州十日記
+| section=
+| author   = 王秀楚
+| previous =
+| next =
+| type = 叙事性散文
+| notes = {{wikipedia|揚州十日|明末清初屠殺事件}}
+| from = 明季稗史彙編
+}}
+<pages index="CADAL01035841 明季稗史彙編·吳耿尚孔四王全傳明季稗史彙編·揚州十日記.djvu" from="94" to="133" />
+{{明朝作品}}
