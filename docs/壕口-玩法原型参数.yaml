@@ -1,0 +1,122 @@
+# 《壕口》玩法原型参数（设计草案）
+# 目标：34 小时黑客松的 3–5 分钟机制样片；不是可直接运行的引擎配置。
+# 与《壕口-玩法体验与开发可行性.md》配套，团队确认技术栈后再映射为程序数据。
+
+meta:
+  schema_version: "0.1"
+  prototype_id: "houkou-two-lives"
+  title: "壕口：两条命的同一条路"
+  language: "zh-CN"
+  target_platform: "desktop_browser"
+  presentation: "2d_or_2_5d_interactive"
+  target_duration_seconds:
+    min: 180
+    max: 300
+  historical_setting: "fictional_pending_period_selection"
+
+design_rules:
+  retry_on_death: false
+  battle_final_outcome_changes: false
+  local_world_state_persists: true
+  player_knowledge_gates_paths: false # 玩家可以凭记忆走浅沟，不需要先触发“发现”变量。
+  combat_system_enabled: false        # 赛时样片用危险与躲避代替完整近战。
+  floating_objective_arrow_enabled: false
+  essential_audio_has_visual_backup: true
+
+scope:
+  map_id: "outer_ditch"
+  playable_roles: 2
+  active_npc_target: 3
+  persistent_objects:
+    - "wooden_barricade"
+    - "route_marker"
+    - "water_flask"
+  omitted_from_hackathon:
+    - "full_camp_exploration"
+    - "freeform_melee"
+    - "large_battle_ai"
+    - "rope_physics"
+    - "third_playable_role"
+    - "save_load_system"
+
+interaction_verbs:
+  - id: "look"
+    label: "观察旗、地形与物件"
+  - id: "move"
+    label: "走向可到达区域"
+  - id: "inspect"
+    label: "近距离查看线索"
+  - id: "ask"
+    label: "询问附近士兵"
+  - id: "use"
+    label: "使用绳、木桩和标记布"
+  - id: "pull"
+    label: "拉开预设木栅"
+  - id: "push_cart"
+    label: "推盾车通过通道"
+
+world_state:
+  initial:
+    gap_state: "closed"      # closed | narrow | wide
+    marker_placed: false
+    cart_position: "rear"   # rear | ditch | wall_side
+  persistent_across_death:
+    - "gap_state"
+    - "marker_placed"
+  second_life_outcome_matrix:
+    - { gap_state: "wide",   marker_placed: true,  route_variant: "direct" }
+    - { gap_state: "wide",   marker_placed: false, route_variant: "find_gap" }
+    - { gap_state: "narrow", marker_placed: true,  route_variant: "widen_gap" }
+    - { gap_state: "narrow", marker_placed: false, route_variant: "find_and_widen" }
+    - { gap_state: "closed", marker_placed: true,  route_variant: "detour" }
+    - { gap_state: "closed", marker_placed: false, route_variant: "detour" }
+
+stages:
+  - id: "recruit_at_ditch"
+    role_name: "阿砚：前出步卒"
+    target_duration_seconds: 120
+    objective: "找出可供盾车通过的壕口，并尽量打开、标记它"
+    starting_knowledge:
+      - "本队旗号"
+      - "伍长指过的木栅大致方位"
+    discoverable_clues:
+      - "浅沟可绕过塌土"
+      - "坡上能看见木栅背面的守兵"
+      - "旧车辙通向壕口"
+    state_changes:
+      - "gap_state"
+      - "marker_placed"
+    transition:
+      type: "death_to_next_role"
+      always_reachable: true
+      retry_prompt: false
+
+  - id: "siege_cart_at_ditch"
+    role_name: "攻城兵：推盾车者"
+    target_duration_seconds: 120
+    objective: "把盾车送到城墙一侧"
+    starting_knowledge:
+      - "本角色知道军令与器械操作"
+    player_can_reuse_prior_observation: true
+    route_variant_from: "world_state.second_life_outcome_matrix"
+    end_condition: "cart_position == wall_side"
+
+sensory_cues:
+  - id: "friendly_side_flag"
+    medium: "visual"
+    meaning: "后队正向侧翼壕口移动"
+    backup: "附近士兵的呼喊或字幕"
+  - id: "advance_drum"
+    medium: "audio"
+    meaning: "队伍开始推进"
+    backup: "可见的旗帜与队列移动"
+  - id: "cart_wheel_on_stone"
+    medium: "audio"
+    meaning: "第二身份开始"
+    backup: "盾车与新手部进入视野"
+
+playtest_checks:
+  - "玩家能在无讲解时说明第一身份的眼前目标"
+  - "玩家换人后能指出至少一处由前一身份造成或发现的东西"
+  - "第二身份的操作因 gap_state / marker_placed 的结果而不同"
+  - "任一种结果都不会让第二身份无法继续"
